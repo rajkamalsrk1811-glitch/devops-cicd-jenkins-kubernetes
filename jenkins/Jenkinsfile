@@ -1,3 +1,4 @@
+
 pipeline {
     agent any
 
@@ -42,12 +43,26 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                sh """
+                    ssh -i /var/lib/jenkins/.ssh/k8s_deploy \
+                    -o IdentitiesOnly=yes \
+                    -o StrictHostKeyChecking=accept-new \
+                    -o ConnectTimeout=10 \
+                    ubuntu@172.31.14.105 \
+                    'kubectl --kubeconfig=/home/ubuntu/.kube/config set image deployment/devops-app my-devops-app=${IMAGE_NAME}:${IMAGE_TAG} && kubectl --kubeconfig=/home/ubuntu/.kube/config rollout status deployment/devops-app'
+                """
+            }
+        }
     }
 
     post {
         success {
-            echo 'Docker image successfully pushed to Docker Hub!'
+            echo 'CI/CD Pipeline completed successfully!'
         }
+
         failure {
             echo 'Pipeline failed. Check the console output.'
         }
